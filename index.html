@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Discord Embed Builder</title>
+	<link href="/styles.css" rel="stylesheet">
+	<script src="javascript.js"></script>
+</head>
+<body>
+    <div class="section">
+		<h1> Instructions: </h1>
+		<p>
+			The prefix used to address Carl will depend on how it is set
+			up in your server. In the NEISVoid server we use
+			<span class=pre>@Carl-bot</span> to make it explicit that
+			we are addressing Carl, but on other servers this may be
+			<span class=pre>!</span>, <span class=pre>?</span>, or
+			something else.
+		</p>
+		<p>
+			To get the JSON of an embed, run <span class=pre>@Carl-bot
+			embedsource <span class=var>$message-id $channel</span></span>.
+			If the output is more than 2000 characters it will be uploaded
+			to a paste site and you'll be given a link, otherwise it
+			will be returned in the channel where you invoked the
+			command. Wherever it is, you can copy the JSON and paste
+			it into the textbox below. Assuming you hve enabled
+			javascript in your browser, this will populate the editor.
+		</p>
+		<p>
+			Once the editor has been populated, you can edit it using
+			the various form fields, and the JSON textbox should update
+			in real time. Once the editor has all the information you
+			want, you can copy the JSON from the textbox, and use it
+			with <span class=pre>@Carl-bot ecembed <span class=var>
+			$message-id $channel $json</span></span>. If this is longer
+			than you are able to post (2000 characters unless you have
+			Nitro, otherwise 4000 characters), you will need to upload
+			the JSON to either <a href="https://pastebin.com/">Pastebin</a>
+			or <a href="https://starb.in/">Starb.in</a> and run
+			<span class=pre>@Carl-bot ecembed <span class=var>
+				$message-id $channel $link-to-paste</span></span>.
+		</p>
+	</div>
+
+	<div id=app>
+		<div class="section" id=form>
+			<h2>Editor:</h2>
+			<div class="section">
+				<h3>Author</h3>
+				<div class="attribute" name=Name key=author.name ></div>
+				<div class="attribute" name=Link key=author.url ></div>
+				<div class="attribute" name=Icon key=author.icon_url ></div>
+			</div>
+			<div class="section">
+				<h3>Title:</h3>
+				<div class="attribute" key=title></div>
+				<div class="attribute" name="URL linked from Title" key=url></div>
+				<div class="attribute" name="URL of Thumbnail" key=thumbnail.url></div>
+			</div>
+			<div class="section">
+				<h3>Body:</h3>
+				<div class="attribute" key=color type="color"></div>
+				<div class="attribute" key=description type="textarea"></div>
+				<div class="attribute" name="Splash Image" key=image.url ></div>
+			</div>
+			<div class="section">
+				<h3>Fields:</h3>
+				<div id=fields></div>
+				<button on:click={fields.add}>Add Field</button>
+			</div>
+			<div class="section">
+				<h3>Footer:</h3>
+				<div class="attribute" name=Icon key=footer.icon_url ></div>
+				<div class="attribute" name=Text key=footer.text ></div>
+				<div class="attribute" key=timestamp type=datetime-local>
+				</div>
+			</div>
+		</div>
+		<div class="section" id=JSON>
+			<h2 slot=heading> JSON: </h2>
+			<textarea id=json-text >{}</textarea>
+		</div>
+	</div>
+</body>
+</html>
