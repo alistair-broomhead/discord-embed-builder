@@ -126,7 +126,7 @@ document.addEventListener('DOMContentLoaded',function(){
                     className: "input",
                 }),
                 value: createElement({
-                    tag: "input",
+                    tag: "textarea",
                     className: "input",
                 }),
                 inline: createElement({
@@ -159,6 +159,8 @@ document.addEventListener('DOMContentLoaded',function(){
         }));
         heading.appendChild(createElement({
             tag: "button",
+            innerText: "x",
+            className: "clear-button",
             onclick: () => fields.remove(i),
         }));
         Object.entries(field.el).forEach(([k, v]) => {
