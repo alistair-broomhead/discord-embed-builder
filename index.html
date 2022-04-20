@@ -45,32 +45,32 @@
 
 	<div id=app>
 		<div class="section" id=form>
-			<h2>Editor:</h2>
+			<h1>Editor:</h1>
 			<div class="section">
-				<h3>Author</h3>
+				<h2>Author:</h2>
 				<div class="attribute" name=Name key=author.name ></div>
 				<div class="attribute" name=Link key=author.url ></div>
 				<div class="attribute" name=Icon key=author.icon_url ></div>
 			</div>
 			<div class="section">
-				<h3>Title:</h3>
+				<h2>Title:</h2>
 				<div class="attribute" key=title></div>
 				<div class="attribute" name="Title link URL" key=url></div>
 				<div class="attribute" name="Thumbnail URL" key=thumbnail.url></div>
 			</div>
 			<div class="section">
-				<h3>Body:</h3>
+				<h2>Body:</h2>
 				<div class="attribute" key=color type="color"></div>
 				<div class="attribute" key=description type="textarea"></div>
 				<div class="attribute" name="Splash Image" key=image.url ></div>
 			</div>
 			<div class="section">
-				<h3>Fields:</h3>
+				<h2>Fields:</h2>
 				<div id=fields></div>
 				<button id=add-field>Add Field</button>
 			</div>
 			<div class="section">
-				<h3>Footer:</h3>
+				<h2>Footer:</h2>
 				<div class="attribute" name=Icon key=footer.icon_url ></div>
 				<div class="attribute" name=Text key=footer.text ></div>
 				<div class="attribute" key=timestamp type=datetime-local>
@@ -78,7 +78,7 @@
 			</div>
 		</div>
 		<div class="section" id=JSON>
-			<h2 slot=heading> JSON: </h2>
+			<h1 slot=heading> JSON: </h1>
 			<textarea id=json-text >{}</textarea>
 		</div>
 	</div>
