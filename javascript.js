@@ -18,18 +18,52 @@ Object.defineProperties(Object.prototype, {
         return this;
     }},
     getIn: {value: function (head, ...tail) {
+        if (head === undefined)
+            return this;
+
         const child = this[head];
+
         if (child === undefined || tail.length === 0)
             return child;
+
         return child.getIn(...tail);
     }},
-    removeIn: {value: function (...path) {
-        const last = path[path.length - 1],
-              parent = this.getIn(...path.slice(0, -1));
-        delete parent[last];
-        return this;
-    }}
 });
+
+let internal = {
+    "author": {
+        "name": "me",
+        "icon_url": "avatar",
+        "url": "my blog"
+    },
+    "title": "title",
+    "url": "title url",
+    "thumbnail": {
+        "url": "thumbnail url"
+    },
+    "description": "This is a description\n\nIt may be many lines",
+    "image": {
+        "url": "Splash Image url"
+    },
+    "color": 14290960,
+    "fields": [
+        {
+            "name": "field 1",
+            "value": "value",
+            "inline": false
+        },
+        {
+            "name": "field 2",
+            "value": "value",
+            "inline": true
+        }
+    ],
+    "footer": {
+        "icon_url": "Footer icon",
+        "text": "Footer text"
+    },
+    "timestamp": "2022-04-19T18:56:01.040Z"
+};
 
 function pad (n, digits) {
     digits = defaulted(digits, 2);
@@ -81,28 +115,38 @@ document.addEventListener('DOMContentLoaded',function(){
 
         return {
             import: () => el.el.value = defaulted(internal.getIn(...k), ""),
-            export: () => internal = internal.setIn(el.el.value, ...k)
+            export: () => internal = internal.setIn(el.el.value, ...k),
         }
     }
 
-    let internal = {};
-
     let model = {
-        display: document.getElementById("json-text"),
+        display: {
+            el: document.getElementById("json-text"),
+            get: () => {
+                internal = JSON.parse(model.display.el.value);
+                model.elements.forEach((el) => el.binding.import());
+                fields.import();
+            },
+            set: () => {
+                model.display.el.value = JSON.stringify(internal, null, 1);
+                model.elements.forEach((el) => el.binding.import());
+                fields.import();
+            },
+        },
         elements: [],
         set: el => {
+            console.log(internal);
             el.binding.export();
             console.log(internal);
-            model.display.value = JSON.stringify(internal, null, 1);
+            model.display.set();
         },
-        remove: el => remove(internal, ...k),
-        reload: () =>  {
-            internal = JSON.parse(model.display.value);
-            model.elements.forEach((el) => el.binding.import());
-            fields.import();
-        }
+        remove: (el) => {
+            internal = internal.setIn(undefined, ...el.keyPath);
+            el.binding.import();
+            model.display.set();
+        },
     };
-    model.display.oninput = _ => model.reload();
+    model.display.el.oninput = model.display.get;
 
     function Field (i) {
         const key = "fields["+i+"]";
@@ -188,7 +232,7 @@ document.addEventListener('DOMContentLoaded',function(){
             internal.fields = fields.elements.map(f => f.content);
             if (internal.fields.length === 0)
                 delete internal.fields;
-            model.display.value = JSON.stringify(internal, null, 1);
+            model.display.set();
         },
         import: () => {
             const want = defaulted(internal.fields, []).length;
@@ -248,6 +292,13 @@ document.addEventListener('DOMContentLoaded',function(){
         this.el = createElement(inputSpec);
         parent.appendChild(this.el);
 
+        parent.appendChild(createElement({
+            tag: "button",
+            className: "clear-button",
+            innerText: "x",
+            onclick: () => model.remove(this),
+        }))
+
         // TODO - create clear button
 
         this.keyPath = key.split('.');
@@ -271,41 +322,6 @@ document.addEventListener('DOMContentLoaded',function(){
         let inputElement = new InputElement(attribute, {key, name, type})
         model.elements.push(inputElement);
     });
-
-    model.display.value = JSON.stringify({
- "author": {
-  "name": "me",
-  "icon_url": "avatar",
-  "url": "my blog"
- },
- "title": "title",
- "url": "title url",
- "thumbnail": {
-  "url": "thumbnail url"
- },
- "description": "This is a description\n\nIt may be many lines",
- "image": {
-  "url": "Splash Image url"
- },
- "color": 14290960,
- "fields": [
-  {
-   "name": "field 1",
-   "value": "value",
-   "inline": false
-  },
-  {
-   "name": "field 2",
-   "value": "value",
-   "inline": true
-  }
- ],
- "footer": {
-  "icon_url": "Footer icon",
-  "text": "Footer text"
- },
- "timestamp": "2022-04-19T18:56:00.000Z"
-}, null, 1);
-    model.reload();
+    model.display.set();
 
 }, false)
