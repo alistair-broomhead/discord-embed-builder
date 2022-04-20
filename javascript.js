@@ -84,7 +84,7 @@ function Binding(el, type) {
 }
 
 function Field (i) {
-    const key = "fields["+i+"]";
+    const key = "model.fields["+i+"]";
     let parent = createElement({
         tag: "div",
         id: key,
@@ -120,7 +120,7 @@ function Field (i) {
                 value: field.el.value.value,
                 inline: field.el.inline.checked,
             };
-            fields.export();
+            model.fields.export();
         },
         import: () => {
             field.el.name.value = field.content.name;
@@ -140,7 +140,7 @@ function Field (i) {
         tag: "button",
         innerText: "x",
         className: "clear-button",
-        onclick: () => fields.remove(i),
+        onclick: () => model.fields.remove(i),
     }));
     Object.entries(field.el).forEach(([k, v]) => {
         v.oninput = field.export
@@ -248,16 +248,15 @@ internal = {
 document.addEventListener('DOMContentLoaded',function(){
     model = {
         display: {
-            el: document.getElementById("json-text"),
             get: () => {
                 internal = JSON.parse(model.display.el.value);
                 model.elements.forEach((el) => el.binding.import());
-                fields.import();
+                model.fields.import();
             },
             set: () => {
                 model.display.el.value = JSON.stringify(internal, null, 1);
                 model.elements.forEach((el) => el.binding.import());
-                fields.import();
+                model.fields.import();
             },
         },
         elements: [],
@@ -272,47 +271,48 @@ document.addEventListener('DOMContentLoaded',function(){
             el.binding.import();
             model.display.set();
         },
-    };
-    let fields = {
-        elements: [],
-        export: () => {
-            internal.fields = fields.elements.map(f => f.content);
-            if (internal.fields.length === 0)
-                delete internal.fields;
-            model.display.set();
-        },
-        import: () => {
-            const want = defaulted(internal.fields, []).length;
-            // Cut any excess
-            while (fields.elements.length > want)
-                fields.elements.pop().parent.remove();
-            // Add any needed
-            while (fields.elements.length < want)
-                fields.elements.push(Field(fields.elements.length));
+        fields: {
+            elements: [],
+            export: () => {
+                internal.fields = model.fields.elements.map(f => f.content);
+                if (internal.fields.length === 0)
+                    delete internal.fields;
+                model.display.set();
+            },
+            import: () => {
+                const want = defaulted(internal.fields, []).length;
+                // Cut any excess
+                while (model.fields.elements.length > want)
+                    model.fields.elements.pop().parent.remove();
+                // Add any needed
+                while (model.fields.elements.length < want)
+                    model.fields.elements.push(Field(model.fields.elements.length));
 
-            for (let i = 0; i < want; i++){
-                let field = fields.elements[i];
-                field.content = internal.fields[i];
-                field.import();
+                for (let i = 0; i < want; i++){
+                    let field = model.fields.elements[i];
+                    field.content = internal.fields[i];
+                    field.import();
+                }
+            },
+            add: () => {
+                let i = model.fields.elements.length;
+                model.fields.elements.push(Field(i))
+                model.fields.export();
+            },
+            remove: i => {
+                internal.fields = [
+                    ...internal.fields.slice(0, i),
+                    ...internal.fields.slice(i + 1)
+                ]
+                model.fields.import();
+                model.display.set();
             }
-        },
-        add: () => {
-            let i = fields.elements.length;
-            fields.elements.push(Field(i))
-            fields.export();
-        },
-        remove: i => {
-            internal.fields = [
-                ...internal.fields.slice(0, i),
-                ...internal.fields.slice(i + 1)
-            ]
-            fields.import();
         }
     };
 
+    model.display.el = document.getElementById("json-text"),
     model.display.el.oninput = model.display.get;
-
-    document.getElementById("add-field").onclick = fields.add;
+    document.getElementById("add-field").onclick = model.fields.add;
     [...document.querySelectorAll("#form .attribute")].forEach(attribute => {
         let {key, name, type} = propertiesOf(attribute);
 
