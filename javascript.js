@@ -1,5 +1,3 @@
-let model, internal;
-
 function defaulted (value, defaultValue, fn){
     if (value === undefined)
         return defaultValue;
@@ -45,18 +43,18 @@ function Binding(el, type) {
     if (type === "color") return {
         import: () =>
             el.el.value = defaulted(
-                internal.getIn(...k),
+                model.internal.getIn(...k),
                 null,
                 (v) => "#" + v.toString(16).padStart(6, '0')
             ),
         export: () => {
             let value = Number("0x" + el.el.value.substring(1))
-            internal = internal.setIn(value, ...k)
+            model.internal = model.internal.setIn(value, ...k)
         }
     }
     if (type === "datetime-local") return {
         import: () => el.el.value = defaulted(
-            internal.getIn(...k), "", (value) => {
+            model.internal.getIn(...k), "", (value) => {
                 let dts = ""
                 value = new Date(value);
                 [
@@ -73,13 +71,13 @@ function Binding(el, type) {
         ),
         export: () => {
             let value = new Date(el.el.value);
-            internal = internal.setIn(value.toISOString(), ...k)
+            model.internal = model.internal.setIn(value.toISOString(), ...k)
         }
     }
 
     return {
-        import: () => el.el.value = defaulted(internal.getIn(...k), ""),
-        export: () => internal = internal.setIn(el.el.value, ...k),
+        import: () => el.el.value = defaulted(model.internal.getIn(...k), ""),
+        export: () => model.internal = model.internal.setIn(el.el.value, ...k),
     }
 }
 
@@ -209,7 +207,86 @@ function createElement({tag, ...attributes}) {
     return newElement;
 }
 
-internal = {
+let model = {
+    internal: {},
+    display: {
+        get: () => {
+            model.internal = JSON.parse(model.display.el.value);
+            model.elements.forEach((el) => el.binding.import());
+            model.fields.import();
+        },
+        set: () => {
+            model.display.el.value = JSON.stringify(model.internal, null, 1);
+            model.elements.forEach((el) => el.binding.import());
+            model.fields.import();
+        },
+    },
+    elements: [],
+    set: el => {
+        console.log(model.internal);
+        el.binding.export();
+        console.log(model.internal);
+        model.display.set();
+    },
+    remove: (el) => {
+        model.internal = model.internal.setIn(undefined, ...el.keyPath);
+        el.binding.import();
+        model.display.set();
+    },
+    fields: {
+        elements: [],
+        export: () => {
+            model.internal.fields = model.fields.elements.map(f => f.content);
+            if (model.internal.fields.length === 0)
+                delete model.internal.fields;
+            model.display.set();
+        },
+        import: () => {
+            const want = defaulted(model.internal.fields, []).length;
+            // Cut any excess
+            while (model.fields.elements.length > want)
+                model.fields.elements.pop().parent.remove();
+            // Add any needed
+            while (model.fields.elements.length < want)
+                model.fields.elements.push(Field(model.fields.elements.length));
+
+            for (let i = 0; i < want; i++){
+                let field = model.fields.elements[i];
+                field.content = model.internal.fields[i];
+                field.import();
+            }
+        },
+        add: () => {
+            let i = model.fields.elements.length;
+            model.fields.elements.push(Field(i))
+            model.fields.export();
+        },
+        remove: i => {
+            model.internal.fields = [
+                ...model.internal.fields.slice(0, i),
+                ...model.internal.fields.slice(i + 1)
+            ]
+            model.fields.import();
+            model.display.set();
+        }
+    }
+};
+
+document.addEventListener('DOMContentLoaded',function(){
+    model.display.el = document.getElementById("json-text");
+    model.display.el.oninput = model.display.get;
+    document.getElementById("add-field").onclick = model.fields.add;
+    [...document.querySelectorAll("#form .attribute")].forEach(attribute => {
+        let {key, name, type} = propertiesOf(attribute);
+
+        if (name === undefined && key !== undefined)
+            name = key[0].toUpperCase() + key.slice(1);
+
+        let inputElement = new InputElement(attribute, {key, name, type})
+        model.elements.push(inputElement);
+    });
+
+    model.internal = {
     "author": {
         "name": "me",
         "icon_url": "avatar",
@@ -243,85 +320,6 @@ internal = {
     },
     "timestamp": "2022-04-19T18:56:01.040Z"
 };
-
-
-document.addEventListener('DOMContentLoaded',function(){
-    model = {
-        display: {
-            get: () => {
-                internal = JSON.parse(model.display.el.value);
-                model.elements.forEach((el) => el.binding.import());
-                model.fields.import();
-            },
-            set: () => {
-                model.display.el.value = JSON.stringify(internal, null, 1);
-                model.elements.forEach((el) => el.binding.import());
-                model.fields.import();
-            },
-        },
-        elements: [],
-        set: el => {
-            console.log(internal);
-            el.binding.export();
-            console.log(internal);
-            model.display.set();
-        },
-        remove: (el) => {
-            internal = internal.setIn(undefined, ...el.keyPath);
-            el.binding.import();
-            model.display.set();
-        },
-        fields: {
-            elements: [],
-            export: () => {
-                internal.fields = model.fields.elements.map(f => f.content);
-                if (internal.fields.length === 0)
-                    delete internal.fields;
-                model.display.set();
-            },
-            import: () => {
-                const want = defaulted(internal.fields, []).length;
-                // Cut any excess
-                while (model.fields.elements.length > want)
-                    model.fields.elements.pop().parent.remove();
-                // Add any needed
-                while (model.fields.elements.length < want)
-                    model.fields.elements.push(Field(model.fields.elements.length));
-
-                for (let i = 0; i < want; i++){
-                    let field = model.fields.elements[i];
-                    field.content = internal.fields[i];
-                    field.import();
-                }
-            },
-            add: () => {
-                let i = model.fields.elements.length;
-                model.fields.elements.push(Field(i))
-                model.fields.export();
-            },
-            remove: i => {
-                internal.fields = [
-                    ...internal.fields.slice(0, i),
-                    ...internal.fields.slice(i + 1)
-                ]
-                model.fields.import();
-                model.display.set();
-            }
-        }
-    };
-
-    model.display.el = document.getElementById("json-text"),
-    model.display.el.oninput = model.display.get;
-    document.getElementById("add-field").onclick = model.fields.add;
-    [...document.querySelectorAll("#form .attribute")].forEach(attribute => {
-        let {key, name, type} = propertiesOf(attribute);
-
-        if (name === undefined && key !== undefined)
-            name = key[0].toUpperCase() + key.slice(1);
-
-        let inputElement = new InputElement(attribute, {key, name, type})
-        model.elements.push(inputElement);
-    });
     model.display.set();
 
 }, false)
