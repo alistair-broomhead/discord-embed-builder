@@ -8,7 +8,6 @@
     flex: 5;
     display: flex;
     flex-direction: column;
-    margin: .5em;
 }
 .section > span {
     display: flex;
@@ -24,8 +23,8 @@
     margin: .3em;
     padding: 0 .2em;
     background-color: #eee;
-unicode-bidi: embed;
-font-family: monospace;
+    unicode-bidi: embed;
+    font-family: monospace;
     border: 1px solid #888;
 }
 .var {
@@ -69,4 +68,30 @@ font-family: monospace;
 .attribute textarea {
     min-height: 5em;
     max-height: fit-content;
+}
+.github-corner {
+    position: absolute;
+    top: 0.5em;
+    right: calc(0.25em + 4px);
+}
+.github-corner:hover .octo-arm {
+    animation: octocat-wave 1120ms ease-in-out;
+}
+@keyframes octocat-wave {
+    0% {transform: rotate(0deg);}
+    20% {transform: rotate(-25deg);}
+    40% {transform: rotate(10deg);}
+    60% {transform: rotate(-25deg);}
+    80% {transform: rotate(10deg);}
+    100% {transform: rotate(0deg);}
+}
+
+@media (max-width: 500px) {
+    .github-corner:hover .octo-arm {
+        animation: none;
+    }
+
+    .github-corner .octo-arm {
+        animation: octocat-wave 1120ms ease-in-out;
+    }
 }
