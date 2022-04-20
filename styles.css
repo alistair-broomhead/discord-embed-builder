@@ -43,6 +43,9 @@ font-family: monospace;
     max-width: 100vw;
     overflow: auto;
 }
+#JSON {
+    min-height: 30em;
+}
 #JSON textarea {
     height: 100%;
 }
@@ -52,20 +55,18 @@ font-family: monospace;
 
 .attribute {
     width: 100%;
-  display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
-}
-.attribute label {
-    width: 40%;
-}
-.attribute .form {
-    width: 60%;
     display: flex;
     align-items: flex-start;
     justify-content: space-between;
 }
+.attribute label {
+    width: 11em;
+}
 .attribute .input {
     width: 100%;
     flex-grow: 2;
+}
+.attribute textarea {
+    min-height: 5em;
+    max-height: fit-content;
 }

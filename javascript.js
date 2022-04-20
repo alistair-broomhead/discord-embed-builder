@@ -108,7 +108,6 @@ function Field (i) {
             }),
             inline: createElement({
                 tag: "input",
-                className: "input",
                 type: "checkbox",
             }),
         },
