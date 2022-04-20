@@ -1,3 +1,5 @@
+let model, internal;
+
 function defaulted (value, defaultValue, fn){
     if (value === undefined)
         return defaultValue;
@@ -30,7 +32,184 @@ Object.defineProperties(Object.prototype, {
     }},
 });
 
-let internal = {
+function pad (n, digits) {
+    digits = defaulted(digits, 2);
+    n = n + ''
+    const needed = digits - n.length;
+    return '0'.repeat(needed) + n;
+}
+
+function Binding(el, type) {
+    const k = el.keyPath;
+
+    if (type === "color") return {
+        import: () =>
+            el.el.value = defaulted(
+                internal.getIn(...k),
+                null,
+                (v) => "#" + v.toString(16).padStart(6, '0')
+            ),
+        export: () => {
+            let value = Number("0x" + el.el.value.substring(1))
+            internal = internal.setIn(value, ...k)
+        }
+    }
+    if (type === "datetime-local") return {
+        import: () => el.el.value = defaulted(
+            internal.getIn(...k), "", (value) => {
+                let dts = ""
+                value = new Date(value);
+                [
+                    value.getFullYear(),
+                    "-", pad(value.getMonth() + 1),
+                    "-", pad(value.getDate()),
+                    "T", pad(value.getHours()),
+                    ":", pad(value.getMinutes()),
+                    ":", pad(value.getSeconds()),
+                    ".", pad(value.getMilliseconds(), 3),
+                ].forEach(v => dts = dts + v)
+                return dts;
+            }
+        ),
+        export: () => {
+            let value = new Date(el.el.value);
+            internal = internal.setIn(value.toISOString(), ...k)
+        }
+    }
+
+    return {
+        import: () => el.el.value = defaulted(internal.getIn(...k), ""),
+        export: () => internal = internal.setIn(el.el.value, ...k),
+    }
+}
+
+function Field (i) {
+    const key = "fields["+i+"]";
+    let parent = createElement({
+        tag: "div",
+        id: key,
+        className: "section",
+    });
+
+    let field = {
+        index: i,
+        parent: parent,
+        content: {
+            name: "",
+            value: "",
+            inline: false
+        },
+        el: {
+            name: createElement({
+                tag: "input",
+                className: "input",
+            }),
+            value: createElement({
+                tag: "textarea",
+                className: "input",
+            }),
+            inline: createElement({
+                tag: "input",
+                className: "input",
+                type: "checkbox",
+            }),
+        },
+        export: () => {
+            field.content = {
+                name: field.el.name.value,
+                value: field.el.value.value,
+                inline: field.el.inline.checked,
+            };
+            fields.export();
+        },
+        import: () => {
+            field.el.name.value = field.content.name;
+            field.el.value.value = field.content.value;
+            field.el.inline.checked = field.content.inline;
+        },
+    };
+
+    document.getElementById("fields").appendChild(parent);
+    let heading = createElement({tag: "span"})
+    parent.appendChild(heading)
+    heading.appendChild(createElement({
+        tag: "h3",
+        innerText: "Field " + (i+1) + ":"
+    }));
+    heading.appendChild(createElement({
+        tag: "button",
+        innerText: "x",
+        className: "clear-button",
+        onclick: () => fields.remove(i),
+    }));
+    Object.entries(field.el).forEach(([k, v]) => {
+        v.oninput = field.export
+        let row = createElement({
+            tag: "div",
+            className: "attribute"
+        });
+        v.id = key + "." + k
+        parent.appendChild(row)
+        row.appendChild(createElement({
+            tag: "label",
+            forHTML: v.id,
+            innerText: k[0].toUpperCase() + k.slice(1) + ":"
+        }));
+        row.appendChild(v);
+    });
+
+    return field;
+}
+
+function propertiesOf (element) {
+    let properties = {};
+    for (let attribute of element.attributes)
+        properties[attribute.name] = attribute.value;
+    return properties;
+}
+
+function InputElement(parent, {key, name, type}){
+    parent.appendChild(createElement({
+        tag: "label",
+        innerText: name + ":",
+        htmlFor: key
+    }));
+
+    let inputSpec = {
+        id: key,
+        tag: "input",
+        className: "input",
+        oninput: _ => model.set(this)
+    };
+
+    if (type === "textarea")
+        inputSpec.tag = type;
+    else if (type !== undefined)
+        inputSpec.type = type;
+
+    this.el = createElement(inputSpec);
+    parent.appendChild(this.el);
+
+    parent.appendChild(createElement({
+        tag: "button",
+        className: "clear-button",
+        innerText: "x",
+        onclick: () => model.remove(this),
+    }))
+
+    this.keyPath = key.split('.');
+    this.binding = Binding(this, type);
+}
+
+function createElement({tag, ...attributes}) {
+    let newElement = document.createElement(tag);
+
+    Object.entries(attributes).forEach(([key, val]) => newElement[key] = val);
+
+    return newElement;
+}
+
+internal = {
     "author": {
         "name": "me",
         "icon_url": "avatar",
@@ -65,61 +244,9 @@ let internal = {
     "timestamp": "2022-04-19T18:56:01.040Z"
 };
 
-function pad (n, digits) {
-    digits = defaulted(digits, 2);
-    n = n + ''
-    const needed = digits - n.length;
-    return '0'.repeat(needed) + n;
-}
-
 
 document.addEventListener('DOMContentLoaded',function(){
-
-    function Binding(el, type) {
-        const k = el.keyPath;
-
-        if (type === "color") return {
-            import: () =>
-                el.el.value = defaulted(
-                    internal.getIn(...k),
-                    null,
-                    (v) => "#" + v.toString(16).padStart(6, '0')
-                ),
-            export: () => {
-                let value = Number("0x" + el.el.value.substring(1))
-                internal = internal.setIn(value, ...k)
-            }
-        }
-        if (type === "datetime-local") return {
-            import: () => el.el.value = defaulted(
-                internal.getIn(...k), "", (value) => {
-                    let dts = ""
-                    value = new Date(value);
-                    [
-                        value.getFullYear(),
-                        "-", pad(value.getMonth() + 1),
-                        "-", pad(value.getDate()),
-                        "T", pad(value.getHours()),
-                        ":", pad(value.getMinutes()),
-                        ":", pad(value.getSeconds()),
-                        ".", pad(value.getMilliseconds(), 3),
-                    ].forEach(v => dts = dts + v)
-                    return dts;
-                }
-            ),
-            export: () => {
-                let value = new Date(el.el.value);
-                internal = internal.setIn(value.toISOString(), ...k)
-            }
-        }
-
-        return {
-            import: () => el.el.value = defaulted(internal.getIn(...k), ""),
-            export: () => internal = internal.setIn(el.el.value, ...k),
-        }
-    }
-
-    let model = {
+    model = {
         display: {
             el: document.getElementById("json-text"),
             get: () => {
@@ -146,86 +273,6 @@ document.addEventListener('DOMContentLoaded',function(){
             model.display.set();
         },
     };
-    model.display.el.oninput = model.display.get;
-
-    function Field (i) {
-        const key = "fields["+i+"]";
-        let parent = createElement({
-            tag: "div",
-            id: key,
-            className: "section",
-        });
-
-        let field = {
-            index: i,
-            parent: parent,
-            content: {
-                name: "",
-                value: "",
-                inline: false
-            },
-            el: {
-                name: createElement({
-                    tag: "input",
-                    className: "input",
-                }),
-                value: createElement({
-                    tag: "textarea",
-                    className: "input",
-                }),
-                inline: createElement({
-                    tag: "input",
-                    className: "input",
-                    type: "checkbox",
-                }),
-            },
-            export: () => {
-                field.content = {
-                    name: field.el.name.value,
-                    value: field.el.value.value,
-                    inline: field.el.inline.checked,
-                };
-                fields.export();
-            },
-            import: () => {
-                field.el.name.value = field.content.name;
-                field.el.value.value = field.content.value;
-                field.el.inline.checked = field.content.inline;
-            },
-        };
-
-        document.getElementById("fields").appendChild(parent);
-        let heading = createElement({tag: "span"})
-        parent.appendChild(heading)
-        heading.appendChild(createElement({
-            tag: "h3",
-            innerText: "Field " + (i+1) + ":"
-        }));
-        heading.appendChild(createElement({
-            tag: "button",
-            innerText: "x",
-            className: "clear-button",
-            onclick: () => fields.remove(i),
-        }));
-        Object.entries(field.el).forEach(([k, v]) => {
-            v.oninput = field.export
-            let row = createElement({
-                tag: "div",
-                className: "attribute"
-            });
-            v.id = key + "." + k
-            parent.appendChild(row)
-            row.appendChild(createElement({
-                tag: "label",
-                forHTML: v.id,
-                innerText: k[0].toUpperCase() + k.slice(1) + ":"
-            }));
-            row.appendChild(v);
-        });
-
-        return field;
-    }
-
     let fields = {
         elements: [],
         export: () => {
@@ -262,57 +309,10 @@ document.addEventListener('DOMContentLoaded',function(){
             fields.import();
         }
     };
-    document.getElementById("add-field").onclick = fields.add
-    function propertiesOf (element) {
-        let properties = {};
-        for (let attribute of element.attributes)
-            properties[attribute.name] = attribute.value;
-        return properties;
-    }
 
-    function InputElement(parent, {key, name, type}){
-        parent.appendChild(createElement({
-            tag: "label",
-            innerText: name + ":",
-            htmlFor: key
-        }));
+    model.display.el.oninput = model.display.get;
 
-        let inputSpec = {
-            id: key,
-            tag: "input",
-            className: "input",
-            oninput: _ => model.set(this)
-        };
-
-        if (type === "textarea")
-            inputSpec.tag = type;
-        else if (type !== undefined)
-            inputSpec.type = type;
-
-        this.el = createElement(inputSpec);
-        parent.appendChild(this.el);
-
-        parent.appendChild(createElement({
-            tag: "button",
-            className: "clear-button",
-            innerText: "x",
-            onclick: () => model.remove(this),
-        }))
-
-        // TODO - create clear button
-
-        this.keyPath = key.split('.');
-        this.binding = Binding(this, type);
-    }
-
-    function createElement({tag, ...attributes}) {
-        let newElement = document.createElement(tag);
-
-        Object.entries(attributes).forEach(([key, val]) => newElement[key] = val);
-
-        return newElement;
-    }
-
+    document.getElementById("add-field").onclick = fields.add;
     [...document.querySelectorAll("#form .attribute")].forEach(attribute => {
         let {key, name, type} = propertiesOf(attribute);
 
