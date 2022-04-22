@@ -285,40 +285,6 @@ document.addEventListener('DOMContentLoaded',function(){
         model.elements.push(inputElement);
     });
 
-    model.internal = {
-    "author": {
-        "name": "me",
-        "icon_url": "avatar",
-        "url": "my blog"
-    },
-    "title": "title",
-    "url": "title url",
-    "thumbnail": {
-        "url": "thumbnail url"
-    },
-    "description": "This is a description\n\nIt may be many lines",
-    "image": {
-        "url": "Splash Image url"
-    },
-    "color": 14290960,
-    "fields": [
-        {
-            "name": "field 1",
-            "value": "value",
-            "inline": false
-        },
-        {
-            "name": "field 2",
-            "value": "value",
-            "inline": true
-        }
-    ],
-    "footer": {
-        "icon_url": "Footer icon",
-        "text": "Footer text"
-    },
-    "timestamp": "2022-04-19T18:56:01.040Z"
-};
     model.display.set();
 
 }, false)
